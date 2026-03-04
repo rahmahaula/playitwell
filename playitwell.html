@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Player Profile: Kak Admiral</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --sage: #7a9e8e;
+      --sage-light: #a8c5b8;
+      --sage-dark: #4e7a6a;
+      --dusty-blue: #6b8cae;
+      --dusty-blue-light: #9bb3cc;
+      --soft-grey: #c8d0d8;
+      --cream: #f0ede8;
+      --dark: #1e2530;
+      --darker: #141920;
+      --card-bg: #242e3a;
+      --card-border: #2e3d4d;
+      --text-light: #dce6ee;
+      --text-muted: #8a9bb0;
+      --accent: #7ecfb3;
+      --accent2: #f0a88a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--darker);
+      color: var(--text-light);
+      font-family: 'Nunito', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(107,140,174,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(107,140,174,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .screen {
+      display: none;
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      animation: fadeIn 0.6s ease;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SCANLINE overlay ── */
+    .scanline {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.04) 2px,
+        rgba(0,0,0,0.04) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ── CARD ── */
+    .game-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(126,207,179,0.08);
+    }
+
+    /* ── MONO text ── */
+    .mono { font-family: 'Space Mono', monospace; }
+
+    /* ── BADGE / tag ── */
+    .tag {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: rgba(126,207,179,0.12);
+      color: var(--accent);
+      border: 1px solid rgba(126,207,179,0.25);
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap {
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--sage), var(--accent));
+      transition: width 0.5s ease;
+    }
+
+    /* ── BUTTONS ── */
+    .btn-primary-custom {
+      background: linear-gradient(135deg, var(--sage-dark), var(--dusty-blue));
+      border: none;
+      color: #fff;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      padding: 12px 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 16px rgba(78,122,106,0.35);
+    }
+    .btn-primary-custom:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(78,122,106,0.45);
+      filter: brightness(1.1);
+    }
+    .btn-primary-custom:active { transform: translateY(0); }
+
+    .btn-option {
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid var(--card-border);
+      color: var(--text-light);
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 14px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      width: 100%;
+    }
+    .btn-option:hover {
+      border-color: var(--accent);
+      background: rgba(126,207,179,0.08);
+      color: var(--accent);
+      transform: translateX(4px);
+    }
+    .btn-option.selected {
+      border-color: var(--accent);
+      background: rgba(126,207,179,0.14);
+      color: var(--accent);
+    }
+
+    /* ── RESPONSE BOX ── */
+    .response-box {
+      background: rgba(126,207,179,0.07);
+      border: 1px solid rgba(126,207,179,0.2);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--accent);
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+    .response-box.visible { display: block; }
+
+    /* ── GLOWING TITLE ── */
+    .glow-text {
+      color: var(--accent);
+      text-shadow: 0 0 20px rgba(126,207,179,0.4), 0 0 40px rgba(126,207,179,0.2);
+    }
+
+    /* ── LOADING BAR (intro) ── */
+    .loading-bar-wrap {
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
+      width: 100%;
+    }
+    .loading-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--sage), var(--accent), var(--dusty-blue-light));
+      width: 0%;
+      animation: load 2.2s ease forwards 0.8s;
+    }
+    @keyframes load {
+      0% { width: 0%; }
+      60% { width: 75%; }
+      100% { width: 100%; }
+    }
+
+    /* ── VICTORY screen ── */
+    .heart-float {
+      display: inline-block;
+      animation: heartbeat 1.4s ease-in-out infinite;
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.18); }
+    }
+
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .star {
+      position: absolute;
+      width: 3px; height: 3px;
+      background: var(--accent);
+      border-radius: 50%;
+      opacity: 0;
+      animation: twinkle var(--dur, 3s) var(--delay, 0s) infinite;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: 0.7; transform: scale(1.2); }
+    }
+
+    .victory-badge {
+      background: linear-gradient(135deg, var(--sage-dark), var(--dusty-blue));
+      border-radius: 50%;
+      width: 100px; height: 100px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem;
+      box-shadow: 0 0 40px rgba(126,207,179,0.3), 0 0 80px rgba(126,207,179,0.1);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(126,207,179,0.3), 0 0 80px rgba(126,207,179,0.1); }
+      50% { box-shadow: 0 0 60px rgba(126,207,179,0.5), 0 0 100px rgba(126,207,179,0.2); }
+    }
+
+    .message-card {
+      background: linear-gradient(135deg, rgba(78,122,106,0.2), rgba(107,140,174,0.2));
+      border: 1px solid rgba(126,207,179,0.25);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+
+    /* ── DIVIDER ── */
+    .game-divider {
+      border: none;
+      border-top: 1px solid var(--card-border);
+      margin: 1.5rem 0;
+    }
+
+    /* ── PIXEL corners decoration ── */
+    .corner-deco {
+      position: absolute;
+      width: 12px; height: 12px;
+      border-color: rgba(126,207,179,0.3);
+      border-style: solid;
+    }
+    .corner-deco.tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
+    .corner-deco.tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
+    .corner-deco.bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
+    .corner-deco.br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
+
+    /* ── RESPONSE BOX variants ── */
+    .response-box.wrong {
+      background: rgba(239,68,68,0.08);
+      border-color: rgba(239,68,68,0.3);
+      color: #f87171;
+    }
+    .response-box.correct {
+      background: rgba(126,207,179,0.1);
+      border-color: rgba(126,207,179,0.35);
+      color: var(--accent);
+    }
+
+    /* ── CURSOR blink ── */
+    .cursor::after {
+      content: '█';
+      animation: blink 1s step-end infinite;
+      color: var(--accent);
+      font-size: 0.85em;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; } 50% { opacity: 0; }
+    }
+
+    @media (max-width: 576px) {
+      .game-card { padding: 1.4rem; }
+      .victory-badge { width: 80px; height: 80px; font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="scanline"></div>
+
+<!-- ════════════════════════════════
+     SCREEN 0 — INTRO / LOADING
+════════════════════════════════ -->
+<div class="screen active align-items-center justify-content-center" id="screen-intro">
+  <div class="container" style="max-width:480px;">
+    <div class="game-card position-relative text-center">
+      <div class="corner-deco tl"></div>
+      <div class="corner-deco tr"></div>
+      <div class="corner-deco bl"></div>
+      <div class="corner-deco br"></div>
+
+      <div class="tag mb-4">◈ SYSTEM BOOT</div>
+
+      <div class="mono mb-2" style="font-size:0.72rem; color:var(--text-muted); letter-spacing:0.08em;">
+        INITIALIZING...
+      </div>
+
+      <h1 class="glow-text fw-bold mb-1" style="font-size:2rem; font-family:'Space Mono',monospace;">
+        PLAYER FOUND
+      </h1>
+      <p class="mono mb-4" style="font-size:0.78rem; color:var(--text-muted);">
+        username: <span style="color:var(--accent);">Kak Admiral</span>
+      </p>
+
+      <div class="loading-bar-wrap mb-2">
+        <div class="loading-bar-fill" id="loading-fill"></div>
+      </div>
+      <div class="mono mb-4" style="font-size:0.68rem; color:var(--text-muted);">
+        loading something special for you...
+      </div>
+
+      <hr class="game-divider"/>
+
+      <p style="color:var(--text-light); font-size:0.95rem; line-height:1.7;" class="mb-4">
+        Yo, Kak Admiral. 👋<br/>
+        I made you a little game.<br/>
+        <span style="color:var(--text-muted); font-size:0.88rem;">Don't be weird about it.</span>
+      </p>
+
+      <button class="btn-primary-custom" onclick="goTo('screen-q1')">
+        ▶ &nbsp; START GAME
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 1 — PICK YOUR CLASS
+════════════════════════════════ -->
+<div class="screen align-items-center justify-content-center" id="screen-q1">
+  <div class="container" style="max-width:520px;">
+    <div class="game-card position-relative">
+      <div class="corner-deco tl"></div>
+      <div class="corner-deco tr"></div>
+      <div class="corner-deco bl"></div>
+      <div class="corner-deco br"></div>
+
+      <!-- progress -->
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="tag">Stage 1 / 3</span>
+        <span class="mono" style="font-size:0.68rem; color:var(--text-muted);">33%</span>
+      </div>
+      <div class="progress-wrap mb-4">
+        <div class="progress-fill" style="width:33%"></div>
+      </div>
+
+      <p class="mono mb-1" style="font-size:0.72rem; color:var(--text-muted); letter-spacing:0.06em;">
+        CHARACTER SETUP
+      </p>
+      <h2 class="fw-bold mb-1" style="font-size:1.35rem;">Pick your class, soldier.</h2>
+      <p style="color:var(--text-muted); font-size:0.88rem;" class="mb-4">
+        Be honest. I already know the answer.
+      </p>
+
+      <div class="d-flex flex-column gap-3 mb-4" id="q1-options">
+        <button class="btn-option" onclick="selectQ1(this, 'sniper')">Funny: Can make my girlfriend laugh</button>
+        <button class="btn-option" onclick="selectQ1(this, 'tank')">Annoying: Tease my girlfirend every time</button>
+        <button class="btn-option" onclick="selectQ1(this, 'support')">Romantic: Make my girlfriend blushed</button>
+        <button class="btn-option" onclick="selectQ1(this, 'scout')">Cool: Be a cool and mature man in front of my girflfriend</button>
+      </div>
+
+      <div class="response-box" id="q1-response"></div>
+
+      <div class="text-center mt-4" id="q1-next" style="display:none!important;">
+        <button class="btn-primary-custom" onclick="goTo('screen-q2')">NEXT STAGE →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 2 — WHAT AM I TO YOU
+════════════════════════════════ -->
+<div class="screen align-items-center justify-content-center" id="screen-q2">
+  <div class="container" style="max-width:520px;">
+    <div class="game-card position-relative">
+      <div class="corner-deco tl"></div>
+      <div class="corner-deco tr"></div>
+      <div class="corner-deco bl"></div>
+      <div class="corner-deco br"></div>
+
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="tag">Stage 2 / 4</span>
+        <span class="mono" style="font-size:0.68rem; color:var(--text-muted);">50%</span>
+      </div>
+      <div class="progress-wrap mb-4">
+        <div class="progress-fill" style="width:50%"></div>
+      </div>
+
+      <p class="mono mb-1" style="font-size:0.72rem; color:var(--text-muted); letter-spacing:0.06em;">
+        RELATIONSHIP CHECK
+      </p>
+      <h2 class="fw-bold mb-1" style="font-size:1.35rem;">Be honest. What am I to you?</h2>
+      <p style="color:var(--text-muted); font-size:0.88rem;" class="mb-4">
+        No pressure. Just be real.
+      </p>
+
+      <div class="d-flex flex-column gap-3 mb-4" id="q2-options">
+        <button class="btn-option" onclick="selectAnswer(this,'q2','wrong','❌  Just a friend? Bro, try again.')">Just a friend</button>
+        <button class="btn-option" onclick="selectAnswer(this,'q2','right','✅  You\'re my love of my life too. 🤍')">My love of my life</button>
+        <button class="btn-option" onclick="selectAnswer(this,'q2','wrong','❌  I don\'t accept wrong answers. Try again.')">Nothing</button>
+        <button class="btn-option" onclick="selectAnswer(this,'q2','right','✅  You\'re my everything also! 🤍')">My everything, honestly</button>
+      </div>
+
+      <div class="response-box" id="q2-response"></div>
+
+      <div class="text-center mt-4" id="q2-next" style="display:none!important;">
+        <button class="btn-primary-custom" onclick="goTo('screen-q3')">NEXT STAGE →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 3 — WHEN WE ARGUE
+════════════════════════════════ -->
+<div class="screen align-items-center justify-content-center" id="screen-q3">
+  <div class="container" style="max-width:520px;">
+    <div class="game-card position-relative">
+      <div class="corner-deco tl"></div>
+      <div class="corner-deco tr"></div>
+      <div class="corner-deco bl"></div>
+      <div class="corner-deco br"></div>
+
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="tag">Stage 3 / 4</span>
+        <span class="mono" style="font-size:0.68rem; color:var(--text-muted);">75%</span>
+      </div>
+      <div class="progress-wrap mb-4">
+        <div class="progress-fill" style="width:75%"></div>
+      </div>
+
+      <p class="mono mb-1" style="font-size:0.72rem; color:var(--text-muted); letter-spacing:0.06em;">
+        RELATIONSHIP TEST
+      </p>
+      <h2 class="fw-bold mb-1" style="font-size:1.35rem;">When we argue, what will you do?</h2>
+      <p style="color:var(--text-muted); font-size:0.88rem;" class="mb-4">
+        Choose wisely. Lives are at stake. (Not really.)
+      </p>
+
+      <div class="d-flex flex-column gap-3 mb-4" id="q3-options">
+        <button class="btn-option" onclick="selectAnswer(this,'q3','right','✅  Great job. What a mature boyfie. 🥹')">Explain and fix it</button>
+        <button class="btn-option" onclick="selectAnswer(this,'q3','wrong','❌  Go marry and make kids with your steamdeck instead.')">Ignore you for 3 days and play Arc Raiders instead</button>
+        <button class="btn-option" onclick="selectAnswer(this,'q3','right','✅  Right answer! 🤍')">Give you (virtual/real) kisses and hugs</button>
+        <button class="btn-option" onclick="selectAnswer(this,'q3','wrong','❌  OK, no phone call for 2 months.')">Act like nothing happened</button>
+      </div>
+
+      <div class="response-box" id="q3-response"></div>
+
+      <div class="text-center mt-4" id="q3-next" style="display:none!important;">
+        <button class="btn-primary-custom" onclick="goTo('screen-q4')">NEXT STAGE →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 4 — FINAL BOSS
+════════════════════════════════ -->
+<div class="screen align-items-center justify-content-center" id="screen-q4">
+  <div class="container" style="max-width:520px;">
+    <div class="game-card position-relative">
+      <div class="corner-deco tl"></div>
+      <div class="corner-deco tr"></div>
+      <div class="corner-deco bl"></div>
+      <div class="corner-deco br"></div>
+
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="tag">Final Stage (4/4)</span>
+        <span class="mono" style="font-size:0.68rem; color:var(--text-muted);">99%</span>
+      </div>
+      <div class="progress-wrap mb-4">
+        <div class="progress-fill" style="width:99%"></div>
+      </div>
+
+      <p class="mono mb-1" style="font-size:0.72rem; color:var(--accent); letter-spacing:0.06em;">
+        ⚠ WARNING — FINAL BOSS APPROACHING
+      </p>
+      <h2 class="fw-bold mb-1" style="font-size:1.35rem;">Would you rather... </h2>
+      <p style="color:var(--text-muted); font-size:0.88rem;" class="mb-4">
+        Think carefully. This one actually matters.
+      </p>
+
+      <div class="d-flex flex-column gap-3 mb-4" id="q4-options">
+        <button class="btn-option" onclick="selectQ4(this, 'a')">
+          🎮 &nbsp; Play Arc Raiders, Where Winds Meet, doing discord with Pinoy friends <span style="color:var(--text-muted);">forever</span>
+        </button>
+        <button class="btn-option" onclick="selectQ4(this, 'b')">
+          🤍 &nbsp; Have me by your side, <span style="color:var(--text-muted);">always</span>
+        </button>
+      </div>
+
+      <div class="response-box" id="q4-response"></div>
+
+      <div class="text-center mt-4" id="q4-next" style="display:none!important;">
+        <button class="btn-primary-custom" onclick="goTo('screen-victory')">
+          🏆 &nbsp; CLAIM YOUR REWARD
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 4 — VICTORY / PAYOFF
+════════════════════════════════ -->
+<div class="screen align-items-center justify-content-center" id="screen-victory">
+  <div class="stars" id="stars-container"></div>
+  <div class="container position-relative" style="max-width:520px; z-index:2;">
+    <div class="game-card position-relative text-center">
+      <div class="corner-deco tl"></div>
+      <div class="corner-deco tr"></div>
+      <div class="corner-deco bl"></div>
+      <div class="corner-deco br"></div>
+
+      <div class="tag mb-4" style="background:rgba(240,168,138,0.12); color:var(--accent2); border-color:rgba(240,168,138,0.25);">
+        ★ MISSION COMPLETE
+      </div>
+
+      <div class="d-flex justify-content-center mb-4">
+        <div class="victory-badge">🏆</div>
+      </div>
+
+      <h2 class="glow-text fw-bold mb-1" style="font-size:1.6rem; font-family:'Space Mono',monospace;">
+        GAME OVER.
+      </h2>
+      <p class="mono mb-4" style="font-size:0.78rem; color:var(--text-muted);">
+        final result loading<span class="cursor"></span>
+      </p>
+
+      <hr class="game-divider"/>
+
+      <div class="message-card mb-4">
+        <p style="font-size:1.05rem; line-height:1.85; color:var(--text-light);">
+          I know you'd probably pick the games.<br/><br/>
+          But here's the thing,
+          <strong style="color:var(--accent);">I'd be your support in every raid.</strong>
+          I know you're annoying sometimes. (Always, sih).<br/><br/>
+          Even though sometimes you lose a match, you will never lose me.
+          <br>
+          <span style="font-size:1.15rem; color:var(--accent2);">
+            <span class="heart-float">🤍</span>
+            I love you, Kak Admiralllllllll
+          </span><br/><br/>
+          <span style="color:var(--text-muted); font-size:0.88rem;">
+            Do not game too much over me -_-
+          </span>
+        </p>
+      </div>
+
+      <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
+        <span class="tag">+99 happiness</span>
+        <span class="tag" style="color:var(--dusty-blue-light); border-color:rgba(107,140,174,0.3); background:rgba(107,140,174,0.1);">+99 love</span>
+        <span class="tag" style="color:var(--accent2); border-color:rgba(240,168,138,0.3); background:rgba(240,168,138,0.08);">achievement unlocked 🏅</span>
+      </div>
+
+      <p class="mono" style="font-size:0.68rem; color:var(--text-muted);">
+        press restart to play again — or just keep this tab open forever.
+      </p>
+
+      <button class="btn-primary-custom mt-3" onclick="restart()" style="font-size:0.78rem; padding:10px 24px;">
+        ↺ &nbsp; RESTART
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ── NAV ──
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (id === 'screen-victory') createStars();
+  }
+
+  // ── Q1 — Pick your class (no right/wrong, any answer proceeds) ──
+  const q1Map = {
+    sniper:  "Even tho I'm not funny, she can laugh easily.",
+    tank:    "My love language is making her mad.",
+    support: "But I know I am not a romantic boyfriend.",
+    scout:   "To be honest, I am not cool at all."
+  };
+  function selectQ1(el, key) {
+    document.querySelectorAll('#q1-options .btn-option').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    const r = document.getElementById('q1-response');
+    r.textContent = '> ' + q1Map[key];
+    r.classList.add('visible');
+    showNext('q1-next');
+  }
+
+  // ── Q2 & Q3 — unified right/wrong handler ──
+  function selectAnswer(el, qid, type, message) {
+    const btns = document.querySelectorAll('#' + qid + '-options .btn-option');
+    const r = document.getElementById(qid + '-response');
+    const nextBtn = document.getElementById(qid + '-next');
+    btns.forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    r.className = 'response-box visible ' + (type === 'right' ? 'correct' : 'wrong');
+    r.textContent = message;
+    if (type === 'right') {
+      nextBtn.style.setProperty('display', 'block', 'important');
+    } else {
+      nextBtn.style.setProperty('display', 'none', 'important');
+    }
+  }
+
+  // ── Q4 — Final Boss (both answers lead to victory) ──
+  const q4Map = {
+    a: "> Nice try. Wrong answer. 😄  But don't worry — I come with co-op mode enabled. We're always on the same team.",
+    b: "> Good. You passed. 🤍  (I'd let you play the games too, don't panic.)"
+  };
+  function selectQ4(el, key) {
+    document.querySelectorAll('#q4-options .btn-option').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    const r = document.getElementById('q4-response');
+    r.textContent = q4Map[key];
+    r.classList.add('visible');
+    showNext('q4-next');
+  }
+
+  function showNext(id) {
+    document.getElementById(id).style.setProperty('display', 'block', 'important');
+  }
+
+  // ── STARS ──
+  function createStars() {
+    const container = document.getElementById('stars-container');
+    container.innerHTML = '';
+    for (let i = 0; i < 60; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.setProperty('--dur', (2 + Math.random() * 3) + 's');
+      star.style.setProperty('--delay', (Math.random() * 3) + 's');
+      container.appendChild(star);
+    }
+  }
+
+  // ── RESTART ──
+  function restart() {
+    document.querySelectorAll('.btn-option').forEach(b => { b.classList.remove('selected'); b.disabled = false; });
+    document.querySelectorAll('.response-box').forEach(r => { r.className = 'response-box'; });
+    ['q1-next','q2-next','q3-next','q4-next'].forEach(id => {
+      document.getElementById(id).style.setProperty('display','none','important');
+    });
+    goTo('screen-intro');
+  }
+</script>
+</body>
+</html>
